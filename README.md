@@ -77,6 +77,36 @@ python build_tracker.py \
     --out-dir output/
 ```
 
+**7. Enrichment + single-workbook export** (`enrich_and_export.py`, optional)
+Takes the three CSVs from step 6 (or the current state of your working
+spreadsheet, exported back out in the same column layout) plus the
+Goodreads export, and:
+
+- adds `Goodreads Bookshelf`, `Number of Pages`, and `Year` columns,
+  matched back to the Goodreads export
+- backfills a missing ISBN from that match, where found
+- relabels combined sources as `"Goodreads, Library"` instead of
+  `"Goodreads & Library"`
+- on Have Read, splits a library row's checkout date out of
+  `Date Started` into its own `Library Checkout Date` column, since a
+  checkout date isn't a reading-start date
+- on Want to Read, sorts the trailing block of rows with no date info
+  (typically library-only additions) by author last name, then title
+- drops the placeholder `Cover` column
+- writes one `.xlsx` workbook with a tab per list, a bold/frozen header
+  row, and auto-fit column widths, instead of three separate CSVs
+
+Requires `openpyxl` (`pip install openpyxl`).
+
+```bash
+python enrich_and_export.py \
+    --goodreads data/goodreads_export.csv \
+    --want-to-read output/want_to_read.csv \
+    --currently-reading output/currently_reading.csv \
+    --have-read output/have_read.csv \
+    --out output/Reading_Tracker.xlsx
+```
+
 ## Known limitations
 
 - Only one author per book is tracked (Goodreads' primary-author field;
@@ -89,3 +119,6 @@ python build_tracker.py \
 - Checkout-history dates are *checkout* dates, not *finished-reading*
   dates - treat `Date Started` as an approximation for library-sourced
   rows.
+- `enrich_and_export.py`'s last-name sort only recognizes a single
+  surname prefix (e.g. "Le Guin", "El Akkad"); a compound one like
+  "van der Berg" would sort under the wrong part of the name.
