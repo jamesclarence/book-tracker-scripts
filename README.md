@@ -107,6 +107,28 @@ python enrich_and_export.py \
     --out output/Reading_Tracker.xlsx
 ```
 
+**8. Goodreads start dates, scraped from the live shelf page** (optional,
+`scrape_goodreads_dates.js` + `apply_goodreads_start_dates.py`)
+The main Goodreads export doesn't include a book's start date at all -
+it only exists on the site's own shelf pages. `scrape_goodreads_dates.js`
+is a browser-console snippet, in the same spirit as
+`scrape_checkout_dates.js`, that reads title/author/date-started/
+date-read straight off a shelf's rendered table (run it against your
+"read" and "did-not-finish" shelves and combine the output into one
+CSV). `apply_goodreads_start_dates.py` then backfills `have_read.csv`'s
+`Date Started` for Goodreads-sourced rows that don't have one, using a
+three-tier title match (exact, subtitle-stripped, then a
+series/volume-aware tier for cases like "Vol. 4" vs. "Volume 4, ...")
+and a last-name-based author match that handles multi-word surnames
+("Van Pelt") consistently. Run it on `have_read.csv` *before*
+`enrich_and_export.py`, so the backfilled dates make it into the final
+workbook:
+
+```bash
+python apply_goodreads_start_dates.py \
+    goodreads_dates.csv output/have_read.csv output/have_read.csv
+```
+
 ## Known limitations
 
 - Only one author per book is tracked (Goodreads' primary-author field;
@@ -122,3 +144,8 @@ python enrich_and_export.py \
 - `enrich_and_export.py`'s last-name sort only recognizes a single
   surname prefix (e.g. "Le Guin", "El Akkad"); a compound one like
   "van der Berg" would sort under the wrong part of the name.
+- `apply_goodreads_start_dates.py` can only backfill a date that's
+  visible somewhere in the scraped shelf CSV. A book you never marked
+  read/did-not-finish on Goodreads under a matching title/author, or
+  one Goodreads itself has no start date for, is left as-is - not a
+  bug, just missing source data.
